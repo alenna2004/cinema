@@ -4,15 +4,18 @@ class CinemaParser:
     def __init__(self, city = 'msk'):
         self.city= city
         self.content= None
+    
     def extract_raw_content(self):
         request_url = "https://" + self.city + ".subscity.ru/"
         req =requests.get(request_url)
         self.content = req.text
+    
     def print_raw_content(self):
         if not self.content:
             self.extract_raw_content()
         soup = BeautifulSoup(self.content)
         print(soup.prettify())
+    
     def get_films_list(self):
         if not self.content:
             self.extract_raw_content()
@@ -47,6 +50,7 @@ class CinemaParser:
             return cin_names[ind].string, b[ind].a.string
         else:
             return None
+    
     def get_soonest_session(self):
         lis = self.get_films_list()
         sea = []
@@ -65,3 +69,28 @@ class CinemaParser:
             time.append(i[1])
         inde = time.index(min(time))
         return sea[inde][0],time[inde], lis[inde]
+    
+    def get_nearest_subway_station(self, cinemaname):
+        self.cinemaname = cinemaname
+        request_url = "https://" + self.city + ".subscity.ru/" + 'cinemas'
+        req =requests.get(request_url)
+        self.content = req.text
+        soup = BeautifulSoup(self.content)
+        #<table class="table table-striped table-bordered table-condensed table-curved table-no-inside-borders">
+        s = soup.find_all('td', {'class':'name col-sm-4 col-xs-12'})
+        a = []
+        cinemaname = cinemaname.lower()
+        for i in s:
+            nam = i.a.string
+            nam= nam.lower()
+            if cinemaname in nam:
+                a.append(i)
+        if len(a) > 1:
+            raise Exception("Уточните свой запрос")
+        elif not a:
+            raise Exception("Такого кинотеатра не существует")
+        else:
+            liss = a[0].find('span', {'class':"medium-font location"}).string
+            liss = liss.replace('м. ','')
+            liss = liss.split(', ')
+            return liss
